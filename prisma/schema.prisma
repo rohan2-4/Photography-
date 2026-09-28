@@ -1,0 +1,168 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String    @id @default(uuid())
+  name         String
+  email        String    @unique
+  passwordHash String
+  role         String    @default("CUSTOMER") // ADMIN, PHOTOGRAPHER, CUSTOMER
+  phone        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  bookings     Booking[]
+}
+
+model Service {
+  id               String    @id @default(uuid())
+  name             String
+  slug             String    @unique
+  description      String
+  shortDesc        String
+  startingPrice    Float
+  duration         String
+  coverImage       String
+  includedFeatures String    // JSON stringified array of features
+  active           Boolean   @default(true)
+  displayOrder     Int       @default(0)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  packages         Package[]
+  bookings         Booking[]
+}
+
+model Package {
+  id                String    @id @default(uuid())
+  serviceId         String?
+  service           Service?  @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  name              String
+  slug              String    @unique
+  eventType         String    // Wedding, Pre-Wedding, Engagement, Birthday, Maternity, Baby, Corporate, Events
+  price             Float
+  discountedPrice   Float?
+  duration          String    // e.g., "8 Hours", "Full Day", "2 Days"
+  photographers     Int       @default(1)
+  editedPhotos      Int       @default(200)
+  videoCoverage     Boolean   @default(false)
+  albumIncluded     Boolean   @default(false)
+  droneCoverage     Boolean   @default(false)
+  preWeddingSession Boolean   @default(false)
+  features          String    // JSON stringified array of features
+  isPopular         Boolean   @default(false)
+  active            Boolean   @default(true)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  bookings          Booking[]
+  offers            Offer[]
+}
+
+model Offer {
+  id              String    @id @default(uuid())
+  packageId       String?
+  package         Package?  @relation(fields: [packageId], references: [id], onDelete: SetNull)
+  title           String
+  code            String    @unique
+  discountPercent Float?
+  discountAmount  Float?
+  startDate       DateTime
+  endDate         DateTime
+  terms           String
+  active          Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model PortfolioImage {
+  id           String   @id @default(uuid())
+  title        String
+  category     String   // Weddings, Pre-Wedding, Events, Portraits, Maternity, Baby, Fashion
+  imageUrl     String
+  mediaType    String   @default("IMAGE") // IMAGE or VIDEO
+  videoUrl     String?
+  width        Int      @default(1200)
+  height       Int      @default(800)
+  isFeatured   Boolean  @default(false)
+  displayOrder Int      @default(0)
+  createdAt    DateTime @default(now())
+}
+
+model Booking {
+  id                 String    @id @default(uuid())
+  bookingNumber      String    @unique // e.g. CIN-2026-0001
+  customerId         String?
+  customer           User?     @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  customerName       String
+  customerEmail      String
+  customerPhone      String
+  serviceId          String?
+  service            Service?  @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  eventType          String
+  eventDate          DateTime
+  startTime          String    // e.g. "09:00"
+  endTime            String    // e.g. "18:00"
+  isFullDay          Boolean   @default(false)
+  location           String
+  city               String?
+  packageId          String?
+  package            Package?  @relation(fields: [packageId], references: [id], onDelete: SetNull)
+  categoryDetails    String?   // JSON stringified category-specific questions (vehicle details, baby age, venue, etc.)
+  additionalNotes    String?
+  amount             Float
+  depositAmount      Float
+  paidAmount         Float     @default(0)
+  bookingStatus      String    @default("PENDING") // PENDING, CONFIRMED, REJECTED, CANCELLED, COMPLETED
+  paymentStatus      String    @default("UNPAID")  // UNPAID, PARTIAL, PAID, REFUNDED
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  payments           Payment[]
+}
+
+model AvailabilityBlock {
+  id        String   @id @default(uuid())
+  date      DateTime
+  startTime String?  // null means full day block
+  endTime   String?
+  reason    String
+  createdBy String   @default("ADMIN")
+  createdAt DateTime @default(now())
+}
+
+model Payment {
+  id            String   @id @default(uuid())
+  bookingId     String
+  booking       Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  transactionId String   @unique
+  amount        Float
+  paymentMethod String   @default("MOCK_CARD") // MOCK_CARD, UPI, RAZORPAY_SIMULATION
+  paymentType   String   @default("ADVANCE")   // ADVANCE, FULL, REMAINING
+  status        String   @default("SUCCESS")   // SUCCESS, FAILED, PENDING
+  paidAt        DateTime @default(now())
+}
+
+model Testimonial {
+  id         String   @id @default(uuid())
+  name       String
+  eventType  String
+  rating     Int      @default(5)
+  review     String
+  photoUrl   String?
+  isFeatured Boolean  @default(true)
+  createdAt  DateTime @default(now())
+}
+
+model ContactMessage {
+  id        String   @id @default(uuid())
+  name      String
+  email     String
+  phone     String
+  eventType String?
+  message   String
+  status    String   @default("UNREAD") // UNREAD, READ, REPLIED
+  createdAt DateTime @default(now())
+}
