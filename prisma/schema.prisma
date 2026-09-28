@@ -30,9 +30,11 @@ model Service {
   coverImage       String
   includedFeatures String    // JSON stringified array of features
   active           Boolean   @default(true)
+  displayOrder     Int       @default(0)
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
   packages         Package[]
+  bookings         Booking[]
 }
 
 model Package {
@@ -81,6 +83,8 @@ model PortfolioImage {
   title        String
   category     String   // Weddings, Pre-Wedding, Events, Portraits, Maternity, Baby, Fashion
   imageUrl     String
+  mediaType    String   @default("IMAGE")
+  videoUrl     String?
   width        Int      @default(1200)
   height       Int      @default(800)
   isFeatured   Boolean  @default(false)
@@ -96,13 +100,18 @@ model Booking {
   customerName       String
   customerEmail      String
   customerPhone      String
+  serviceId          String?
+  service            Service?  @relation(fields: [serviceId], references: [id], onDelete: SetNull)
   eventType          String
   eventDate          DateTime
   startTime          String    // e.g. "09:00"
   endTime            String    // e.g. "18:00"
+  isFullDay          Boolean   @default(false)
   location           String
+  city               String?
   packageId          String?
   package            Package?  @relation(fields: [packageId], references: [id], onDelete: SetNull)
+  categoryDetails    String?
   additionalNotes    String?
   amount             Float
   depositAmount      Float
