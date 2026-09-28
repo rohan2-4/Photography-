@@ -66,12 +66,11 @@ npm install
 
 ### 3. Database Setup & Seed
 ```bash
-# Create .env.local from .env.example and set DATABASE_URL and JWT_SECRET.
-# Push the Prisma schema to your PostgreSQL database.
-npx prisma db push
+# Start with local SQLite and create its tables.
+npm run db:push:local
 
-# Seed demo data. This resets existing data in development.
-npm run db:seed
+# Optional: load local demo data. This resets existing local data.
+npm run db:seed:local
 ```
 
 ### 4. Run Development Server
@@ -86,7 +85,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 2. In Vercel, create a **public** Blob store and connect it to the project. Vercel supplies `BLOB_READ_WRITE_TOKEN` for uploads.
 3. Set `JWT_SECRET` to a long, random value in the Vercel project settings. Keep all secrets out of source control.
 4. Push the project to GitHub and import that repository in Vercel. Vercel builds with `npm run build`.
-5. Before using the deployed app, push the Prisma schema to the new database with `npx prisma db push`.
+5. Before using the deployed app, push the Prisma schema to the new database with `npm run db:push` and the production `DATABASE_URL`.
 
 To load the starter catalog into a new production database, set `ADMIN_PASSWORD`, `PHOTOGRAPHER_PASSWORD`, and `CUSTOMER_PASSWORD` to private values before running `npm run db:seed` with the production database URL. Production seeding refuses non-empty databases. The seed credentials shown below are for local development only.
 
