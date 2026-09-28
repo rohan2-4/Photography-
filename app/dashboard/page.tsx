@@ -1,35 +1,45 @@
-import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { Camera, Calendar, Clock, MapPin, Eye, Plus, Sparkles, CheckCircle2 } from 'lucide-react';
-import { getCurrentUser } from '@/lib/auth/session';
+import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/db/prisma';
-import { BookingStatusBadge, PaymentStatusBadge } from '@/components/ui/BookingStatusBadge';
-import Navbar from '@/components/ui/Navbar';
-import Footer from '@/components/ui/Footer';
+import { getCurrentUser } from '@/lib/auth/session';
+import Navbar from '@/components/layout/Navbar';
+import Footer from '@/components/layout/Footer';
+import {
+  CalendarCheck,
+  CalendarDays,
+  Clock,
+  CheckCircle2,
+  AlertCircle,
+  Calendar,
+  MapPin,
+  Package,
+  PlusCircle,
+  Eye,
+  CreditCard
+} from 'lucide-react';
 
 export const revalidate = 0;
 
 export default async function CustomerDashboardPage() {
-  const user = await getCurrentUser();
+  const currentUser = await getCurrentUser();
 
-  if (!user) {
+  if (!currentUser) {
     redirect('/login');
   }
 
+  // Query customer bookings
   const bookings = await prisma.booking.findMany({
     where: {
       OR: [
-        { customerId: user.id },
-        { customerEmail: user.email.toLowerCase() },
+        { customerId: currentUser.id },
+        { customerEmail: currentUser.email },
       ],
     },
     include: {
       package: true,
       payments: true,
     },
-    orderBy: {
-      createdAt: 'desc',
-    },
+    orderBy: { createdAt: 'desc' },
   });
 
   const totalBookings = bookings.length;
@@ -38,150 +48,140 @@ export default async function CustomerDashboardPage() {
   const completedBookings = bookings.filter((b) => b.bookingStatus === 'COMPLETED').length;
 
   return (
-    <div className="min-h-screen bg-[#08090D] text-slate-100 flex flex-col selection:bg-amber-400 selection:text-black">
-      <Navbar initialUser={user} />
-      
-      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 space-y-10">
-        
-        {/* Welcome Banner */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[#12141D] border border-white/10 p-8 rounded-3xl shadow-2xl relative overflow-hidden">
-          <div className="space-y-1 relative z-10">
-            <span className="text-xs uppercase tracking-widest text-amber-400 font-semibold">
-              Customer Portal
+    <div className="min-h-screen flex flex-col bg-[#08090D] text-slate-100">
+      <Navbar currentUser={currentUser} />
+      <main className="flex-1 pt-28 pb-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+        {/* Welcome Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 glass-panel rounded-3xl p-8 border border-[#262A3C]">
+          <div>
+            <span className="text-xs font-mono font-bold tracking-widest text-gold-400 uppercase">
+              CUSTOMER DASHBOARD
             </span>
-            <h1 className="text-3xl font-serif font-bold text-white">
-              Welcome, {user.name}
+            <h1 className="text-3xl sm:text-4xl font-serif font-bold text-white mt-1">
+              Welcome back, {currentUser.name}
             </h1>
-            <p className="text-xs text-slate-400">
-              Manage your event photo reservations, track studio confirmation status, and view receipts.
+            <p className="text-slate-400 text-sm mt-1">
+              Manage your photography reservations, view status timelines, and track payment receipts.
             </p>
           </div>
 
-          <div className="flex items-center gap-3 relative z-10">
-            <Link
-              href="/book"
-              className="px-5 py-3 rounded-xl text-xs font-bold text-black bg-gradient-to-r from-amber-300 via-amber-400 to-amber-500 hover:brightness-110 shadow-lg shadow-amber-500/20 transition-all flex items-center gap-2"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Book New Shoot</span>
-            </Link>
+          <Link
+            href="/book"
+            className="px-6 py-3.5 rounded-full bg-gold-gradient text-black font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-gold-glow hover:scale-105 transition-all w-fit"
+          >
+            <PlusCircle className="w-4 h-4" />
+            Book New Experience
+          </Link>
+        </div>
+
+        {/* Overview Stats Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="glass-panel rounded-2xl p-6 border border-[#262A3C] space-y-2">
+            <span className="text-xs text-slate-400 uppercase font-semibold">Total Bookings</span>
+            <div className="text-3xl font-serif font-bold text-white">{totalBookings}</div>
+          </div>
+
+          <div className="glass-panel rounded-2xl p-6 border border-[#262A3C] space-y-2">
+            <span className="text-xs text-amber-400 uppercase font-semibold">Pending Confirmation</span>
+            <div className="text-3xl font-serif font-bold text-amber-300">{pendingBookings}</div>
+          </div>
+
+          <div className="glass-panel rounded-2xl p-6 border border-[#262A3C] space-y-2">
+            <span className="text-xs text-gold-400 uppercase font-semibold">Confirmed Events</span>
+            <div className="text-3xl font-serif font-bold text-gold-300">{confirmedBookings}</div>
+          </div>
+
+          <div className="glass-panel rounded-2xl p-6 border border-[#262A3C] space-y-2">
+            <span className="text-xs text-emerald-400 uppercase font-semibold">Completed Celebrations</span>
+            <div className="text-3xl font-serif font-bold text-emerald-300">{completedBookings}</div>
           </div>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div className="bg-[#12141D] border border-white/10 p-6 rounded-2xl space-y-2">
-            <span className="text-slate-400 text-xs font-semibold">Total Bookings</span>
-            <div className="text-2xl font-serif font-bold text-white">{totalBookings}</div>
-          </div>
-
-          <div className="bg-[#12141D] border border-white/10 p-6 rounded-2xl space-y-2">
-            <span className="text-slate-400 text-xs font-semibold">Pending Review</span>
-            <div className="text-2xl font-serif font-bold text-amber-400">{pendingBookings}</div>
-          </div>
-
-          <div className="bg-[#12141D] border border-white/10 p-6 rounded-2xl space-y-2">
-            <span className="text-slate-400 text-xs font-semibold">Confirmed Events</span>
-            <div className="text-2xl font-serif font-bold text-emerald-400">{confirmedBookings}</div>
-          </div>
-
-          <div className="bg-[#12141D] border border-white/10 p-6 rounded-2xl space-y-2">
-            <span className="text-slate-400 text-xs font-semibold">Completed Shoots</span>
-            <div className="text-2xl font-serif font-bold text-blue-400">{completedBookings}</div>
-          </div>
-        </div>
-
-        {/* My Bookings Section */}
+        {/* Bookings List */}
         <div className="space-y-6">
-          <div className="flex items-center justify-between border-b border-white/10 pb-4">
-            <h2 className="text-xl font-serif font-bold text-white">My Photography Bookings</h2>
-            <span className="text-xs text-slate-400">{bookings.length} Events Total</span>
-          </div>
+          <h2 className="text-2xl font-serif font-bold text-white">My Photography Bookings</h2>
 
           {bookings.length === 0 ? (
-            <div className="text-center py-16 bg-[#12141D] rounded-3xl border border-white/10 space-y-4">
-              <div className="w-12 h-12 rounded-full bg-white/5 text-amber-400 flex items-center justify-center mx-auto">
-                <Camera className="w-6 h-6" />
-              </div>
-              <h3 className="text-base font-serif font-bold text-white">No Bookings Found</h3>
-              <p className="text-xs text-slate-400 max-w-sm mx-auto">
-                You have not placed any photography booking requests yet. Check out our packages and availability to reserve your date.
+            <div className="glass-panel rounded-3xl p-12 text-center border border-[#262A3C] space-y-4">
+              <Calendar className="w-12 h-12 text-slate-500 mx-auto" />
+              <h3 className="text-xl font-serif font-bold text-white">No Bookings Found</h3>
+              <p className="text-slate-400 text-sm max-w-sm mx-auto">
+                You haven't reserved any photography package with Cinemayur yet.
               </p>
               <Link
-                href="/book"
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold text-black bg-gradient-to-r from-amber-300 to-amber-500 shadow-md"
+                href="/packages"
+                className="inline-block px-6 py-2.5 rounded-full bg-gold-gradient text-black font-bold text-xs uppercase tracking-wider shadow-gold-glow"
               >
-                <span>Book Your First Event</span>
+                Browse Packages
               </Link>
             </div>
           ) : (
             <div className="space-y-4">
-              {bookings.map((booking) => {
-                const dateStr = new Date(booking.eventDate).toLocaleDateString('en-IN', {
-                  day: 'numeric',
-                  month: 'short',
-                  year: 'numeric',
-                });
-
-                return (
-                  <div
-                    key={booking.id}
-                    className="bg-[#12141D] border border-white/10 hover:border-amber-500/40 rounded-2xl p-6 transition-all duration-300 flex flex-col lg:flex-row lg:items-center justify-between gap-6 shadow-xl"
-                  >
-                    <div className="space-y-3">
-                      <div className="flex flex-wrap items-center gap-3">
-                        <span className="font-mono text-xs text-amber-300 font-bold bg-amber-500/10 px-2.5 py-1 rounded-md border border-amber-500/20">
-                          {booking.bookingNumber}
-                        </span>
-                        <BookingStatusBadge status={booking.bookingStatus} />
-                        <PaymentStatusBadge status={booking.paymentStatus} />
-                      </div>
-
-                      <div>
-                        <h3 className="text-lg font-serif font-bold text-white">
-                          {booking.package?.name || booking.eventType}
-                        </h3>
-                        <div className="flex flex-wrap items-center gap-4 text-xs text-slate-400 mt-1">
-                          <div className="flex items-center gap-1.5">
-                            <Calendar className="w-3.5 h-3.5 text-amber-400" />
-                            <span>{dateStr} ({booking.startTime} - {booking.endTime})</span>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <MapPin className="w-3.5 h-3.5 text-amber-400" />
-                            <span className="truncate max-w-xs">{booking.location}</span>
-                          </div>
-                        </div>
-                      </div>
+              {bookings.map((booking) => (
+                <div
+                  key={booking.id}
+                  className="glass-panel rounded-2xl p-6 border border-[#262A3C] hover:border-gold-500/40 transition-all flex flex-col md:flex-row md:items-center justify-between gap-6"
+                >
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-3">
+                      <span className="px-3 py-1 rounded-full bg-gold-500/20 text-gold-300 text-xs font-bold font-mono border border-gold-500/30">
+                        {booking.bookingNumber}
+                      </span>
+                      <span className="text-xs font-semibold text-slate-400 uppercase">
+                        {booking.eventType}
+                      </span>
                     </div>
 
-                    <div className="flex items-center justify-between lg:justify-end gap-6 pt-4 lg:pt-0 border-t lg:border-t-0 border-white/5">
-                      <div className="text-right">
-                        <span className="text-[10px] text-slate-400 block uppercase">Total Amount</span>
-                        <span className="text-lg font-serif font-bold text-white">
-                          ₹{booking.amount.toLocaleString('en-IN')}
-                        </span>
-                        <span className="text-[11px] text-amber-300/80 block">
-                          Paid: ₹{booking.paidAmount.toLocaleString('en-IN')}
-                        </span>
-                      </div>
+                    <h3 className="text-xl font-serif font-bold text-white">
+                      {booking.package?.name || booking.eventType}
+                    </h3>
 
-                      <Link
-                        href={`/dashboard/bookings/${booking.id}`}
-                        className="px-4 py-2.5 rounded-xl text-xs font-semibold text-white bg-slate-800 border border-slate-700 hover:bg-slate-700 transition-all flex items-center gap-1.5 shrink-0"
-                      >
-                        <Eye className="w-3.5 h-3.5 text-amber-400" />
-                        <span>View Details</span>
-                      </Link>
+                    <div className="flex flex-wrap items-center gap-4 text-xs text-slate-400">
+                      <span className="flex items-center gap-1.5 text-gold-300 font-semibold">
+                        <Calendar className="w-4 h-4 text-gold-400" />
+                        {new Date(booking.eventDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })} ({booking.startTime} - {booking.endTime})
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <MapPin className="w-4 h-4 text-slate-500" />
+                        {booking.location}
+                      </span>
                     </div>
                   </div>
-                );
-              })}
+
+                  <div className="flex flex-col sm:flex-row md:flex-col lg:flex-row items-start md:items-end lg:items-center gap-4 border-t md:border-t-0 border-[#262A3C] pt-4 md:pt-0">
+                    <div className="text-left md:text-right space-y-1">
+                      <div className="text-lg font-bold font-serif text-white">
+                        ₹{booking.amount.toLocaleString('en-IN')}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                          booking.bookingStatus === 'CONFIRMED' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' :
+                          booking.bookingStatus === 'PENDING' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' :
+                          booking.bookingStatus === 'COMPLETED' ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' :
+                          'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                        }`}>
+                          {booking.bookingStatus}
+                        </span>
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-surface-200 text-slate-300 border border-surface-300">
+                          {booking.paymentStatus}
+                        </span>
+                      </div>
+                    </div>
+
+                    <Link
+                      href={`/dashboard/bookings/${booking.id}`}
+                      className="px-5 py-2.5 rounded-xl bg-surface-200 hover:bg-gold-500 hover:text-black text-white text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5 transition-colors"
+                    >
+                      <Eye className="w-4 h-4" />
+                      View Details
+                    </Link>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
-
       </main>
-
       <Footer />
     </div>
   );
